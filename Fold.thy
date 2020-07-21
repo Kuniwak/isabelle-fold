@@ -71,9 +71,40 @@ lemma foldl_rev: "\<lbrakk> pseudo_commute f \<rbrakk> \<Longrightarrow> foldl f
   apply(simp)
   done
 
-theorem "\<lbrakk> pseudo_commute f \<rbrakk> \<Longrightarrow> foldl f b as = foldr f b as"
+theorem foldlr_iff: "\<lbrakk> pseudo_commute f \<rbrakk> \<Longrightarrow> foldl f b as = foldr f b as"
   apply(subst foldr_rev)
   apply(subst foldl_rev)
   apply(assumption)
   apply(rule refl)
+  done
+
+definition assoc :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "assoc f \<equiv> \<forall>a b. f a b = f b a"
+
+definition commute :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "commute f \<equiv> \<forall>a b c. f (f a b) c = f a (f b c)"
+
+theorem pseudo_commuteI[intro]: "\<lbrakk> assoc f; commute f \<rbrakk> \<Longrightarrow> pseudo_commute f"
+  apply(unfold assoc_def)
+  apply(unfold commute_def)
+  apply(unfold pseudo_commute_def)
+  apply(intro allI)
+  apply(frule_tac x="b" and P="\<lambda>a. \<forall>b c. f (f a b) c = f a (f b c)" in spec)
+  apply(drule_tac x="a1" and P="\<lambda>ba. \<forall>c. f (f b ba) c = f b (f ba c)" in spec)
+  apply(drule_tac x="a2" and P="\<lambda>c. f (f b a1) c = f b (f a1 c)" in spec)
+  apply(erule ssubst)
+  apply(drule_tac x="a1" and P="\<lambda>a. \<forall>b. f a b = f b a" in spec)
+  apply(drule_tac x="a2" and P="\<lambda>b. f a1 b = f b a1" in spec)
+  apply(erule ssubst)
+  apply(drule_tac x="b" in spec)
+  apply(drule_tac x="a2" in spec)
+  apply(drule_tac x="a1" in spec)
+  apply(erule subst)
+  apply(rule refl)
+  done
+
+theorem "\<lbrakk> assoc f; commute f \<rbrakk> \<Longrightarrow> foldl f b as = foldr f b as"
+  apply(drule pseudo_commuteI)
+  apply(assumption)
+  apply(erule foldlr_iff)
   done
